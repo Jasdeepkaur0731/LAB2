@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat API</title>
+    <style>
+        #container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        <button onclick="fetchData('names')">All Names</button>
+        <br>
+        <button onclick="fetchData('healthIssues', getInputValue('healthIssue'))">Health Issues</button>
+        <br>
+        <input type="number" id="healthIssue" name="healthIssue">
+        <br>
+        <button onclick="fetchData('weights', getInputValue('units'))">Weight</button>
+        <br>
+        <label>
+            <input type="radio" name="units" value="imperial" checked> Imperial
+        </label>
+        <br>
+        <label>
+            <input type="radio" name="units" value="metric"> Metric
+        </label>
+        <br>
+        <button onclick="fetchData('intelligenceFriendly')">Intelligence – Friendly</button>
+        <br>
+        <button onclick="fetchData('averageIntelligence')">Average Intelligence</button>
+        <br>
+        <button onclick="fetchData('averageChildFriendlyIntelligence')">Average Intelligence for Child Friendly</button>
+
+        <div id="putcontent"></div>
+    </div>
+
+    <script>
+        const putcontent = document.getElementById("putcontent");
+        const given_url = "https://api.thecatapi.com/v1/breeds";
+
+        async function fetchData(type, param) {
+            try {
+                const response = await fetch(given_url);
+                if (!response.ok) throw new Error('Something went wrong.');
+                const data = await response.json();
+                putcontent.innerHTML = "";
+
+                switch (type) {
+                    case 'names': displaySimpleList(data, 'name'); break;
+                    case 'healthIssues': displayFilteredNames(data, 'health_issues', param); break;
+                    case 'weights': displaySimpleList(data, getWeightUnit(param)); break;
+                    case 'intelligenceFriendly': displayCombinedValues(data, 'intelligence', 'child_friendly', 'I', 'F'); break;
+                    case 'averageIntelligence': displayAverage(data, 'intelligence', 'Average Intelligence'); break;
+                    case 'averageChildFriendlyIntelligence': displayAverage(data.filter(cat => cat.child_friendly > 0), 'intelligence', 'Average Intelligence for Child Friendly'); break;
+                }
+            } catch (error) {
+                console.error('Error fetching JSON:', error);
+            }
+        }
+
+        function displaySimpleList(data, property) {
+            const list = data.map(value => value[property]).join(', ');
+            putcontent.innerHTML += `<p>${list}</p>`;
+        }
+
+        function displayFilteredNames(data, property, value) {
+            const filteredNames = data.filter(cat => cat[property] == value).map(cat => cat.name);
+            displaySimpleList(filteredNames, 'name');
+        }
+
+        function getWeightUnit(units) {
+            return data => data.map(value => (units === "metric" ? value.weight.metric : value.weight.imperial)).join(', ');
+        }
+
+        function displayCombinedValues(data, property1, property2, label1, label2) {
+            const combinedValues = data.map(value => `${label1}: ${value[property1]}, ${label2}: ${value[property2]}`).join(', ');
+            putcontent.innerHTML += `<p>${combinedValues}</p>`;
+        }
+
+        function displayAverage(data, property, label) {
+            const total = data.reduce((sum, value) => sum + value[property], 0);
+            const average = total / data.length;
+            putcontent.innerHTML += `<p>${label}: ${average}</p>`;
+        }
+
+        function getInputValue(id) {
+            return document.getElementById(id).value;
+        }
+    </script>
+    
+</body>
+</html>
